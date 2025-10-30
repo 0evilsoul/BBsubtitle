@@ -1,0 +1,8 @@
+version: "3.9"
+services:
+  bilisub-webapp:
+    build: .
+    container_name: bilisub
+    ports:
+      - "17772:17772"
+    restart: always

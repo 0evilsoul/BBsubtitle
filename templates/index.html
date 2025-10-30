@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>B站字幕获取器-Web版</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<div class="container mt-5 mb-3" style="max-width:600px">
+    <h3 class="mb-3">Bilibili字幕获取器·Web版</h3>
+    <div class="mb-3">
+        <label class="form-label">视频BV号/链接：</label>
+        <input type="text" class="form-control" id="input-url" placeholder="如 BV1xxxxxxx 或 https://www.bilibili.com/video/BV1xxxxxxx" required>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">语言白名单（可选，逗号分隔）：</label>
+        <input type="text" class="form-control" id="input-lang" placeholder="如 en,zh-CN">
+    </div>
+    <button class="btn btn-primary w-100" id="btn-fetch">获取字幕</button>
+    <div class="mt-3" id="result-area" style="display:none;">
+        <label class="form-label">输出字幕：</label>
+        <textarea class="form-control" id="output-text" rows="8" readonly></textarea>
+        <button class="btn btn-success mt-2 w-100" id="btn-copy">复制到剪贴板</button>
+        <div class="mt-2 text-success" id="copy-msg" style="display:none;">已复制到剪贴板！</div>
+    </div>
+    <div id="msg-area" class="mt-3 text-danger"></div>
+    <footer class="mt-5 text-center text-secondary" style="font-size:14px">支持移动/桌面端，服务端部署需科学上网</footer>
+</div>
+<script>
+    const fetchBtn = document.getElementById('btn-fetch');
+    const copyBtn = document.getElementById('btn-copy');
+    const resultArea = document.getElementById('result-area');
+    const msgArea = document.getElementById('msg-area');
+    const copyMsg = document.getElementById('copy-msg');
+
+    fetchBtn.onclick = async function() {
+        const url = document.getElementById('input-url').value.trim();
+        const lang = document.getElementById('input-lang').value.trim();
+        msgArea.innerText = '';
+        resultArea.style.display = 'none';
+        copyMsg.style.display = 'none';
+        if (!url) {
+            msgArea.innerText = '请输入视频链接或BV号';
+            return;
+        }
+        fetchBtn.disabled = true;
+        fetchBtn.innerText = '加载中...';
+        try {
+            const resp = await fetch('/api/subtitle', {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({ url, whitelist: lang? lang.split(',') : undefined })
+            });
+            const data = await resp.json();
+            if (data.code === 0) {
+                document.getElementById('output-text').value = data.text;
+                resultArea.style.display = '';
+            } else {
+                msgArea.innerText = data.msg;
+            }
+        } catch (e) {
+            msgArea.innerText = '请求失败，或网络有问题';
+        } finally {
+            fetchBtn.disabled = false;
+            fetchBtn.innerText = '获取字幕';
+        }
+    };
+
+    copyBtn.onclick = () => {
+        const text = document.getElementById('output-text').value;
+        if (!text) return;
+        navigator.clipboard && navigator.clipboard.writeText(text).then(()=>{
+            copyMsg.style.display = '';
+            setTimeout(()=>{ copyMsg.style.display='none'; }, 2200);
+        });
+    };
+</script>
+</body>
+</html>
