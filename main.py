@@ -27,7 +27,19 @@ def parse_input_to_bvid(user_input: str) -> str:
 	if bv_match:
 		return bv_match.group(0)
 
-	candidate = user_input.strip()
+	def _extract_first_url_like(text: str) -> str:
+		"""Extract the first http(s) URL or bare short-link from mixed text."""
+		# http/https full URL first
+		m = re.search(r"https?://[^\s\u3000]+", text)
+		if m:
+			return m.group(0)
+		# bare short link like b23.tv/xxxx inside mixed text
+		m2 = re.search(r"(b23\.tv|acg\.tv|bili2233\.cn|bili2233\.com|bili\.(?:tv|com))/\S+", text, re.IGNORECASE)
+		if m2:
+			return m2.group(0)
+		return text.strip()
+
+	candidate = _extract_first_url_like(user_input)
 
 	# 2) try resolve common short links by following redirects
 	short_domains = ("b23.tv", "acg.tv", "bili2233.cn", "bili2233.com")
